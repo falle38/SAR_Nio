@@ -12,10 +12,12 @@ import nio.engineImpl.NioEngineImpl;
 
 public class NioClientTest implements Runnable, ConnectCallback, DeliverCallback {
 
+	//je fais un test
 	NioChannel clientChannel = null;
 	String addressConnection;
 	int portConnection;
 	private int numSeq;
+	private int test = 0;
 
 	public NioClientTest(String addressConnection, int portConnection) {
 		super();
