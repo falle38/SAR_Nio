@@ -13,13 +13,12 @@ import nio.engine.NioServer;
 import nio.engineImpl.NioEngineImpl;
 
 
+
 public class MulticastClient implements ConnectCallback, DeliverCallback, AcceptCallback,Runnable {
 	
 
 	String address;
 	int port;
-	//Un message est composé d'un type, de l'id de l'expéditeur et son estampille
-	LinkedList<String> MsgList;
 	//sert à déterminer si le client est tjs vivant
 	boolean isalive;
 	//nioEngine
@@ -29,9 +28,13 @@ public class MulticastClient implements ConnectCallback, DeliverCallback, Accept
 	//connexion avec les autres clients
 	ArrayList<NioChannel> channels;
 	//ACK de la part des autres clients
-	LinkedList<String> ACKlist;
+	LinkedList<String> WaitingACK;
 	//nombre de clients que l'on connait
 	int neighbors;
+	//liste des messages
+	ArrayList<MulticastMessage> MsgList;
+	
+	
 	
 	public MulticastClient(int id,String address,int port,int n) {
 		super();
@@ -40,10 +43,11 @@ public class MulticastClient implements ConnectCallback, DeliverCallback, Accept
 		this.address=address;
 		this.port=port;
 		this.channels=new ArrayList<NioChannel>();
-		this.MsgList=new LinkedList<String>();
-		this.ACKlist=new LinkedList<String>();
+		this.MsgList= new ArrayList<MulticastMessage>();
+		this.WaitingACK=new LinkedList<String>();
 		this.neighbors=n;
 	}
+	
 	
 
 	@Override
@@ -64,14 +68,72 @@ public class MulticastClient implements ConnectCallback, DeliverCallback, Accept
 	@Override
 	public void accepted(NioServer server, NioChannel channel) {
 		// TODO Auto-generated method stub
+		channels.add(channel);
+		channel.setDeliverCallback(this);
 		
 	}
 
 	@Override
 	public void deliver(NioChannel channel, ByteBuffer bytes) {
 		// TODO Auto-generated method stub
+		String msg = new String(bytes.array());
+		String[] m = msg.split("@");
+		String header = m[0];
+		
+		switch (header)
+		{
+		  case "CHAT":
+			  System.out.println("Message" + m[3]+ "received by Client "+this.id+ " from Client " +m[1]);
+				int receivedId = Integer.parseInt(m[1]);
+				int receivedClock = Integer.parseInt(m[2]);
+				String content = m[3];
+				MulticastMessage Msg = new MulticastMessage(receivedId, receivedClock, content);
+				MsgList.add(Msg);
+				setNewClock(receivedClock);
+				sendACKToClient();
+				retrieveWaitingACK();
+				
+		    break;   
+		  case "ACK":
+			    MulticastMessage res ;
+			    res=FindMessageByIdandClock(MsgList,Integer.parseInt(m[1]), Integer.parseInt(m[2]));
+			    if(!(res == null)){
+					int sender = Integer.parseInt(m[1]);
+					System.out.println("ACK" + m[3]+ "received by Client "+this.id+ " from Client " +sender);
+					res.setTrueACK(sender);
+					res.AttemptDeliverMessage(MsgList);
+				}else{
+					System.out.println("ACK" + m[3]+ "received by Client "+this.id+ " from Client " +m[1]);
+					WaitingACK.add(msg);
+				}
+			    break;  
+		  default:
+		    System.out.println("header not identified received by Client "+this.id);  
+		}
+			
 		
 	}
+
+	private void retrieveWaitingACK() {
+		// TODO Auto-generated method stub
+		for(int i = 0; i < WaitingACK.size(); i++){
+			String msg = WaitingACK.element();
+			String m[] = msg.split("@");		
+
+			MulticastMessage res;
+			res=FindMessageByIdandClock(MsgList,Integer.parseInt(m[1]), Integer.parseInt(m[2]));
+		    if(!(res == null)){
+		    	int sender = Integer.parseInt(m[1]);
+				System.out.println(" Retrieving ACK" + m[3]+ "received by Client "+this.id+ " from Client " +m[1]);
+				res.setTrueACK(sender);
+				WaitingACK.pop();
+				res.AttemptDeliverMessage(MsgList);
+		    }
+		    else System.out.println(" Retrieving non coming message ACK" + m[3]+ "received by Client "+this.id+ " from Client " +m[1]);
+		}
+	}
+
+
 
 	@Override
 	public void closed(NioChannel channel) {
@@ -89,22 +151,45 @@ public class MulticastClient implements ConnectCallback, DeliverCallback, Accept
 	}
 	
 	
-	public void sendToAllClient(String type) {
-		String msg =buildMsg(type, this.id, this.clock);
+	public void sendToAllClient(String content) {
+		String msg =buildMsg("MSG", this.id, this.clock,content);
+		MulticastMessage m = new MulticastMessage(this.id, this.clock,content);
 		for (int i=0;i<channels.size();i++) {
 			channels.get(i).send(msg.getBytes(), 0, msg.getBytes().length);
 		}
-		MsgList.add(msg);
+	    MsgList.add(m);
 		this.clock++;
 		
 	}
 	
+	protected void sendACKToClient(){
+		String ack = buildACK("ACK",this.id,this.clock);
+		for(int i = 0; i < channels.size(); i++){
+			channels.get(i).send(ack.getBytes(), 0, ack.getBytes().length);
+		}
+	}
 	
-	public String buildMsg(String content,int id,int estampille) {
-		String result = content + "@" + this.id + "@" + estampille;
+	//rechercher un message particulier dans la liste
+			public MulticastMessage FindMessageByIdandClock(ArrayList<MulticastMessage> Messages,int id, int clock) {
+			MulticastMessage result = null;
+			for(int i = 0; i < Messages.size(); i++){
+				if(Messages.get(i).idM == id && Messages.get(i).clock == clock){
+					result = Messages.get(i);
+				}
+			}
+			return result;
+			
+			}
+	
+	public String buildMsg(String type,int id,int estampille,String content) {
+		String result = type + "@" + this.id + "@" + estampille +"@" + content;
 		return result;	
 	}
 	
+	public String buildACK(String type,int id,int estampille) {
+		String result = type + "@" + this.id + "@" + estampille;
+		return result;	
+	}
 	
 	
 
