@@ -25,7 +25,7 @@ public class ClientCallback implements ConnectCallback, AcceptCallback, DeliverC
 	@Override
 	public void closed(NioChannel channel) {
 		// TODO Auto-generated method stub
-		channel.close();
+		
 	}
 
 	@Override
