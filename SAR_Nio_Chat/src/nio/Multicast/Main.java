@@ -3,6 +3,7 @@ package nio.Multicast;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
+/****** author fall & sambe ******/
 
 public class Main {
 	

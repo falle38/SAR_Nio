@@ -2,6 +2,8 @@ package nio.Multicast;
 
 import java.util.ArrayList;
 
+/****** author fall & sambe ******/
+
 public class Deliverer {
 	
 	

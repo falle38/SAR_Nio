@@ -17,7 +17,7 @@ import nio.engine.NioEngine;
 import nio.engine.NioServer;
 import nio.engineImpl.NioEngineImpl;
 
-
+/****** author fall & sambe ******/
 
 
 
@@ -118,6 +118,8 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 
 
 		if (header.equals("CHAT")) {
+			boolean test=header.equals("CHAT");
+			System.out.println("test= "+test);
 			String[] component = queue.split("@");
 			System.out.println("Message " + component[2]+ " received by Client "+this.id+ " from Client " +component[0]);
 			int receivedId = Integer.parseInt(component[0]);
