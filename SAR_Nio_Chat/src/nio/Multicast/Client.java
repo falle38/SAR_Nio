@@ -131,7 +131,7 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 			sendACKToClient();
 			//retrieveWaitingACK();
 		}
-		if (header.equals("ACK")) {
+		else if (header.equals("ACK")) {
 			boolean test=header.equals("ACK");
 			System.out.println("test= "+test);
 			String[] componentA = queue.split("@");
@@ -149,7 +149,7 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 			}
 		}
 
-		if (header.equals("GROUP")) {
+		else if (header.equals("GROUP")) {
 			System.out.println("j'ai reçu un msg GROUP");
 			System.out.println(msg);
 			if (queue.equals("none")) {
