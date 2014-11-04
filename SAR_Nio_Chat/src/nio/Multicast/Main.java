@@ -41,7 +41,7 @@ public static void main(String[] args) throws UnknownHostException {
 		}
 		
 		
-		new Thread(new Client(2,1999,4444)).start();
+		new Thread(new Client(3,1999,4444)).start();
 		
 
 	}

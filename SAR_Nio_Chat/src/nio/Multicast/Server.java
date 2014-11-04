@@ -118,6 +118,7 @@ public class Server implements AcceptCallback, DeliverCallback, Runnable{
 		if(message[0].equals("JOIN")){
 			int port = Integer.parseInt(message[1]);
 			this.listPorts.put(channel, port);
+			//the server adds the new client to the group
 			this.group.add(channel.getRemoteAddress().getHostString() + "@" +port);
 		}
 		

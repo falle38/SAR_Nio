@@ -100,6 +100,8 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 		// TODO Auto-generated method stub
 		channels.add(channel);
 		channel.setDeliverCallback(this);
+		sendToAllClient("hello");
+		
 		
 	}
 
@@ -109,33 +111,38 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 		String msg = new String(bytes.array());
 		String[] m = msg.split(">");
 		String header = m[0];
+		System.out.println("HEADER: "+ m[0]+ " receveid by Client "+this.id+"");
 		String queue = m[1];
+		
+		System.out.println(msg+ " received by Client "+this.id);
 
 
-		if (header.equals("MSG")) {
+		if (header.equals("CHAT")) {
 			String[] component = queue.split("@");
-			System.out.println("Message" + component[3]+ "received by Client "+this.id+ " from Client " +component[1]);
-			int receivedId = Integer.parseInt(component[1]);
-			int receivedClock = Integer.parseInt(component[2]);
-			String content = m[3];
+			System.out.println("Message " + component[2]+ " received by Client "+this.id+ " from Client " +component[0]);
+			int receivedId = Integer.parseInt(component[0]);
+			int receivedClock = Integer.parseInt(component[1]);
+			String content = component[2];
 			MulticastMessage Msg = new MulticastMessage(receivedId, receivedClock, content);
 			MsgList.add(Msg);
 			setNewClock(receivedClock);
 			sendACKToClient();
-			retrieveWaitingACK();
+			//retrieveWaitingACK();
 		}
-		if (header.equals("CHAT")) {
-			String[] component = queue.split("@");
+		if (header.equals("ACK")) {
+			boolean test=header.equals("ACK");
+			System.out.println("test= "+test);
+			String[] componentA = queue.split("@");
 			MulticastMessage res ;
-			res=FindMessageByIdandClock(MsgList,Integer.parseInt(component[1]), Integer.parseInt(component[2]));
+			res=FindMessageByIdandClock(MsgList,Integer.parseInt(componentA[0]), Integer.parseInt(componentA[1]));
 			if(!(res == null)){
-				int sender = Integer.parseInt(component[1]);
-				System.out.println("ACK" + m[3]+ "received by Client "+this.id+ " from Client " +sender);
+				int sender = Integer.parseInt(componentA[0]);
+				System.out.println("ACK received by Client "+this.id+ " from Client " +sender);
 				res.setTrueACK(sender);
 				Deliverer del = new Deliverer();
 				del.AttemptDeliverMessage(MsgList);
 			}else{
-				System.out.println("ACK" + m[3]+ "received by Client "+this.id+ " from Client " +m[1]);
+				System.out.println("ACK received  earlier by Client "+this.id+ " from Client " +componentA[0]);
 				WaitingACK.add(msg);
 			}
 		}
@@ -144,26 +151,26 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 			System.out.println("j'ai reçu un msg GROUP");
 			System.out.println(msg);
 			if (queue.equals("none")) {
-				//ajout dans le groupe
+				//the client have no one to connect to
 			}
 			else {
 				String[] tab = queue.split("-"); 
 				for (int i=0;i<tab.length;i++) {
 					String[] element = tab[i].split("@");
 					String ipC = element[0];
-					String portC = element[1];
+					String portC = element[1];					
 					Join(ipC,portC);
-
-
 
 				}
 
 			}	
+			//the client sent his port to everyone but only the server can interpret this message in order to be added in the group
 			String joiner = "JOIN>"+this.portC;
 			this.sendJointoAll(joiner);
 		}
+		
 		else {
-			System.out.println("header not identified received by Client "+this.id);  
+    	System.out.println(m[0]+" received by Client "+this.id+" is not a header identified");  
 		}
 	}
 
@@ -221,7 +228,7 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 	
 	public void sendToAllClient(String content) {
 		System.out.println("Client "+this.id+" is sending to all client");
-		String msg =buildMsg("MSG", this.id, this.clock,content);
+		String msg =buildMsg("CHAT", this.id, this.clock,content);
 		MulticastMessage m = new MulticastMessage(this.id, this.clock,content);
 		for (int i=0;i<channels.size();i++) {
 			channels.get(i).send(msg.getBytes(), 0, msg.getBytes().length);
@@ -271,22 +278,16 @@ public class Client implements ConnectCallback, DeliverCallback, AcceptCallback,
 			
 			
 	public String buildMsg(String type,int id,int estampille,String content) {
-		String result = type + "@" + id + "@" + estampille +"@" + content;
+		String result = type + ">" + id + "@" + estampille +"@" + content;
 		return result;	
 	}
 	
 	public String buildACK(String type,int id,int estampille) {
-		String result = type + "@" + id + "@" + estampille;
+		String result = type + ">" + id + "@" + estampille;
 		return result;	
 	}
 	
 	
-	public String buildSimpleMsg(String type,int id) {
-		String result = type + "@" + id;
-		return result;	
-	}
-	
-
 	public void setNewClock(int ck)  {
 		int valuetoset = Math.max(ck+1, this.clock+1);
 		this.clock=valuetoset;
