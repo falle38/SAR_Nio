@@ -48,23 +48,23 @@ public class NioEngineImpl extends NioEngine {
 					selectedKeys.remove();
 
 					if (!key.isValid()) {
-						System.out.println(" cle valide");
+						//System.out.println(" cle valide");
 						continue;
 					} 
 					if (key.isConnectable()) {
-						System.out.println("je suis connecté");
+						//System.out.println("je suis connecté");
 						handleConnection(key);
 					}
 					if (key.isAcceptable()) {
-						System.out.println("connection accepté");
+						//System.out.println("connection accepté");
 						handleAccept(key);
 
 					} else if (key.isReadable()) {
-						System.out.println("je peux lire");
+						//System.out.println("je peux lire");
 						handleRead(key);
 
 					} else if (key.isWritable()) {
-						System.out.println("je peux écrire");
+						//System.out.println("je peux écrire");
 						handleWrite(key);
 
 					} else 
@@ -111,7 +111,7 @@ public class NioEngineImpl extends NioEngine {
 
 		socketChannel.connect(new InetSocketAddress(hostAddress, port));
 		socketChannel.register(this.selector, SelectionKey.OP_CONNECT);
-		System.out.println(" Connection reussi :");
+		//System.out.println(" Connection reussi :");
 
 		callbacks.put(socketChannel, callback);
 	}
@@ -141,7 +141,7 @@ public class NioEngineImpl extends NioEngine {
 			socketChannel.configureBlocking(false);
 			socketChannel.register(this.selector, SelectionKey.OP_READ);
 
-			System.out.println("je recupere" + servers.size());
+			//System.out.println("je recupere" + servers.size());
 			NioServerImpl server = this.servers.get(serverSocketChannel);
 			AcceptCallback callback = server.getCallback();
 
